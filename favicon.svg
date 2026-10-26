@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 42 42" fill="none">
+<style>
+path { stroke: #1d2a3f; }
+@media (prefers-color-scheme: dark) { path { stroke: #fff; } }
+</style>
+<path d="M22.0675 3.8675C21.4375 3.3775 20.5626 3.3775 19.9326 3.8675C16.6076 6.405 6.79006 14.6825 6.84256 24.325C6.84256 32.13 13.1951 38.5 21.0176 38.5C28.8401 38.5 35.1925 32.1475 35.1925 24.3425C35.21 14.84 25.375 6.4225 22.0675 3.8675Z" stroke-width="3.5" stroke-miterlimit="10"/>
+</svg>

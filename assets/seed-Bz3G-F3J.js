@@ -1,0 +1,1 @@
+import{i as e,n as t,r as n}from"./data-BeyXBgWI.js";try{let r=new URL(window.location.href);r.searchParams.has(`new`)?(e(),r.searchParams.delete(`new`),window.history.replaceState(window.history.state,``,r)):n()||t()}catch(e){console.error(`Could not set up the demo`,e)}

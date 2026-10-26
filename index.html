@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="icon" type="image/svg+xml" href="/Gleas/favicon.svg" />
+        <link rel="apple-touch-icon" href="/Gleas/apple-touch-icon-180x180.png" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <!-- Android's status bar: the surface colour, set below. -->
+        <meta name="theme-color" content="#e5e5e5" />
+        <title>Gléas</title>
+        <script>
+            // Set the theme before the first paint, so the page doesn't flash
+            // the wrong one. Mirrors themeAt in src/lib/theme.ts; the hours
+            // and storage key are from config.ts, the surface colours from
+            // index.css (theme.test.ts checks them).
+            {
+                const hour = new Date().getHours();
+                let theme = hour >= 7 && hour < 19 ? 'light' : 'dark';
+                try {
+                    const saved = JSON.parse(
+                        localStorage.getItem('skin-cycle-theme'),
+                    );
+                    if (
+                        (saved?.theme === 'light' || saved?.theme === 'dark') &&
+                        Date.now() < saved.until
+                    )
+                        theme = saved.theme;
+                } catch {}
+                document.documentElement.dataset.theme = theme;
+                document
+                    .querySelector('meta[name="theme-color"]')
+                    .setAttribute(
+                        'content',
+                        theme === 'light' ? '#e5e5e5' : '#2c2c2c',
+                    );
+            }
+            // Opened from the iPhone Home Screen rather than in Safari, where
+            // iOS blurs the top of the page (see `--edge-clearance` in
+            // index.css). Only iOS sets `navigator.standalone`.
+            if (navigator.standalone)
+                document.documentElement.dataset.standalone = '';
+        </script>
+      <script type="module" crossorigin src="/Gleas/assets/index-DrKhuyIi.js"></script>
+      <link rel="stylesheet" crossorigin href="/Gleas/assets/index-BYg28CBv.css">
+    <link rel="manifest" href="/Gleas/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/Gleas/registerSW.js"></script></head>
+    <body>
+        <div id="root"></div>
+    </body>
+</html>
