@@ -73,6 +73,144 @@ flowchart LR
 | Hosting | Docker Compose, nginx, Cloudflare Tunnel |
 | Quality | Vitest, ESLint, Prettier |
 
+## A peek at the code
+
+The code is private, but here are a few pieces of it.
+
+**The rules every plan must pass.** These checks run on every plan before anyone sees it, on the server and again on the phone. Day 14 runs straight into Day 1, so the check for two strong days in a row wraps around.
+
+```ts
+/**
+ * What's wrong with a plan, as sentences the AI can act on; empty if
+ * nothing. These hold whoever made the plan:
+ * - Days 1–14 in order, each with a morning and an evening step.
+ * - Only their own products, each at most once per routine.
+ * - Acid exfoliants on Acid days and retinoids on Retinoid days, and those
+ *   days use one, so the two never share a day.
+ * - No two Acid or Retinoid days in a row, Day 14 to Day 1 included.
+ * - No retinoids while pregnant or breastfeeding.
+ */
+export function checkPlan(plan: Plan, answers?: Answers): string[] {
+    const problems: string[] = [];
+
+    // … the checks on each day
+
+    const isActive = (index: number) => {
+        const type = plan.days.at(index % plan.days.length)?.type;
+        return type === 'acid' || type === 'retinoid';
+    };
+    plan.days.forEach((_, index) => {
+        if (isActive(index) && isActive(index + 1))
+            problems.push(
+                `Day ${String(index + 1)} and the day after are both Acid or Retinoid days: put a gentle day between them.`,
+            );
+    });
+
+    return problems;
+}
+```
+
+And the kinds of product it never suggests adding, whatever the AI says:
+
+```ts
+const CONDITIONS: readonly (keyof typeof CONCERNS)[] = [
+    'eczema',
+    'psoriasis',
+    'rosacea',
+];
+
+/**
+ * Kinds of product never worth suggesting they add, whoever suggests it:
+ * acid exfoliants and retinoids while their skin's irritated, with eczema,
+ * psoriasis or rosacea, or alongside a prescription treatment, and retinoids
+ * while pregnant or breastfeeding.
+ */
+export function ruledOutKinds(answers: Answers): ReadonlySet<ProductKind> {
+    const kinds = new Set<ProductKind>();
+    if (
+        answers.irritated ||
+        answers.prescription.trim() !== '' ||
+        answers.concerns.some((concern) => CONDITIONS.includes(concern))
+    )
+        kinds.add('exfoliant').add('retinoid');
+    if (answers.pregnant) kinds.add('retinoid');
+    return kinds;
+}
+```
+
+**Two phones saving at once.** Each save on the server adds 1 to its revision, and a phone saves only if the server is still at the revision it last saw. If another phone saved first, the server turns the save down and sends back its copy. The phone merges the two, keeping every tick from both, and tries again, up to three times.
+
+```ts
+// Each round, once this phone's data has changed:
+const result = await deps.save(meta.rev, state);
+const now = deps.local();
+if (result.saved) {
+    // Changed again while it saved: saved next round.
+    const changed = now.state !== state;
+    deps.store({ ...now.meta, rev: result.rev, changed });
+    if (!changed) return;
+    continue;
+}
+const theirs = read(result.current);
+if (!theirs) return;
+deps.store(
+    { ...now.meta, rev: result.current.rev, changed: true },
+    now.meta.changedAt > result.current.updatedAt
+        ? mergeStates(theirs, now.state)
+        : mergeStates(now.state, theirs),
+);
+```
+
+**Sinking and rising.** Every raised shape and pressed well in the app sinks into the page and rises back out as you move around. One function makes the animation for all of them. To sink a shape, it takes the shape's shadow and sets every length in it to `0px`, so the shadow shrinks to nothing and the shape sits flat. Rising springs it back up.
+
+```ts
+/**
+ * Motion variants for something that sinks into the surface (`sunk`) and rises
+ * back out of it (`raised`): sinking eases in, rising springs up. Give
+ * `variants` alone to sink and rise with the motion component around it.
+ */
+export function sinkRise({
+    shadow,
+    scale,
+    fade = false,
+}: SinkRiseOptions): Variants {
+    const fadeSeconds = SINK_SECONDS / 2;
+    return {
+        sunk: {
+            ...(shadow && { boxShadow: shadow.replace(/-?\d+px/g, '0px') }),
+            ...(scale !== undefined && { scale }),
+            ...(fade && { opacity: 0 }),
+            transition: {
+                duration: SINK_SECONDS,
+                ease: 'easeIn',
+                opacity: { duration: fadeSeconds, delay: fadeSeconds },
+            },
+        },
+        raised: {
+            ...(shadow && { boxShadow: shadow }),
+            ...(scale !== undefined && { scale: 1 }),
+            ...(fade && { opacity: 1 }),
+            transition: {
+                type: 'spring',
+                duration: 0.5,
+                bounce: 0.3,
+                opacity: { duration: fadeSeconds },
+            },
+        },
+    };
+}
+
+/**
+ * A pop-up's card, raised over its page: it shrinks a little and fades as it
+ * flattens, so the page shows through again, and rises back the same way.
+ */
+export const POPUP = sinkRise({
+    shadow: SHADOWS.raised,
+    scale: 0.95,
+    fade: true,
+});
+```
+
 ## About the demo
 
 The demo is the real app with its server swapped out. A stand-in in your browser answers the app's requests, so nothing you enter leaves the browser.
